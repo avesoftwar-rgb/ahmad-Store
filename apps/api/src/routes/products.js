@@ -1,6 +1,8 @@
 const express = require('express');
 const { ObjectId } = require('mongodb');
 const { getDB } = require('../db');
+const { spawn } = require('child_process');
+const path = require('path');
 
 const router = express.Router();
 
@@ -141,7 +143,8 @@ router.post('/', async (req, res) => {
       });
     }
     
-    if (typeof price !== 'number' || price < 0) {
+    const priceNum = typeof price === 'string' ? parseFloat(price) : price;
+    if (typeof priceNum !== 'number' || isNaN(priceNum) || priceNum < 0) {
       return res.status(400).json({
         error: {
           code: 'INVALID_PRICE',
@@ -150,7 +153,8 @@ router.post('/', async (req, res) => {
       });
     }
     
-    if (typeof stock !== 'number' || stock < 0) {
+    const stockNum = typeof stock === 'string' ? parseInt(stock) : stock;
+    if (typeof stockNum !== 'number' || isNaN(stockNum) || stockNum < 0) {
       return res.status(400).json({
         error: {
           code: 'INVALID_STOCK',
@@ -164,11 +168,11 @@ router.post('/', async (req, res) => {
     const newProduct = {
       name,
       description: description || '',
-      price,
+      price: priceNum,
       category,
-      tags: tags || [],
+      tags: Array.isArray(tags) ? tags : (typeof tags === 'string' && tags.trim() !== '' ? tags.split(',').map(t => t.trim()) : []),
       imageUrl: imageUrl || '',
-      stock: stock || 0,
+      stock: stockNum || 0,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -251,6 +255,35 @@ router.put('/:id/stock', async (req, res) => {
         message: 'Failed to update stock'
       }
     });
+  }
+});
+
+// POST /api/products/seed - Seed products (admin only)
+router.post('/seed', async (req, res) => {
+  try {
+    console.log('🌱 Manual seed requested...');
+    
+    await new Promise((resolve, reject) => {
+      const seedPath = path.join(__dirname, '../../scripts/seed.js');
+      const proc = spawn(process.execPath, [seedPath], {
+        stdio: 'inherit',
+        env: process.env
+      });
+      proc.on('close', (code) => {
+        if (code === 0) {
+          console.log('✅ Manual seed completed');
+          resolve();
+        } else {
+          reject(new Error(`Manual seed failed with exit code ${code}`));
+        }
+      });
+      proc.on('error', reject);
+    });
+    
+    res.json({ message: 'Database seeded successfully' });
+  } catch (error) {
+    console.error('Manual seed error:', error);
+    res.status(500).json({ error: 'Failed to seed database' });
   }
 });
 
