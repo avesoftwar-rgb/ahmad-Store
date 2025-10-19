@@ -26,22 +26,28 @@ export default function AdminDashboard() {
       setLoading(true)
       
       // Load multiple endpoints in parallel
-      const [dashboardMetrics, _, performance, assistantStats] = await Promise.all([
+      const [analytics, performance, assistantStats] = await Promise.all([
         apiClient.get('/api/analytics/dashboard-metrics'),
-        apiClient.get('/api/dashboard/business-metrics'),
         apiClient.get('/api/dashboard/performance'),
         apiClient.get('/api/dashboard/assistant-stats')
       ])
 
+      const totalRevenue = analytics?.revenue?.total ?? 0
+      const averageOrderValue = analytics?.revenue?.avgOrderValue ?? 0
+      const totalOrders = analytics?.revenue?.totalOrders ?? 0
+      const totalCustomers = (typeof analytics?.customers === 'object'
+        ? analytics?.customers?.total
+        : analytics?.customers) ?? 0
+
       setMetrics({
-        totalRevenue: dashboardMetrics.totalRevenue || 0,
-        totalOrders: dashboardMetrics.totalOrders || 0,
-        totalCustomers: dashboardMetrics.totalCustomers || 0,
-        averageOrderValue: dashboardMetrics.averageOrderValue || 0,
-        recentOrders: dashboardMetrics.recentOrders || [],
-        topProducts: dashboardMetrics.topProducts || [],
+        totalRevenue,
+        totalOrders,
+        totalCustomers,
+        averageOrderValue,
+        recentOrders: analytics?.recentOrders || [],
+        topProducts: analytics?.topProducts || [],
         performanceMetrics: performance,
-        assistantStats: assistantStats
+        assistantStats
       })
     } catch (err) {
       console.error('Failed to load dashboard:', err)
@@ -182,16 +188,16 @@ export default function AdminDashboard() {
         <h2 className="text-xl font-semibold mb-4">Top Products</h2>
         <div className="space-y-3">
           {metrics?.topProducts?.slice(0, 5).map((product: any, index: number) => (
-            <div key={product._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div key={`${product._id || product.name || index}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center space-x-3">
                 <span className="text-lg font-semibold text-gray-600">#{index + 1}</span>
                 <div>
                   <p className="font-medium text-gray-900">{product.name}</p>
-                  <p className="text-sm text-gray-500">Sold: {product.soldCount} units</p>
+                  <p className="text-sm text-gray-500">Sold: {product.soldCount ?? product.quantitySold ?? 0} units</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="font-semibold text-gray-900">${product.revenue.toFixed(2)}</p>
+                <p className="font-semibold text-gray-900">${(product.revenue ?? 0).toFixed(2)}</p>
                 <p className="text-sm text-gray-500">Revenue</p>
               </div>
             </div>
