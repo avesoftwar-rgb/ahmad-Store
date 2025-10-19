@@ -334,7 +334,17 @@ async function seedDatabase() {
     await client.connect();
     console.log('✅ Connected to MongoDB');
     
-    const db = client.db();
+    // Use the same DB name selection as the API layer
+    const uriPathDb = (() => {
+      try {
+        const match = uri.match(/mongodb(?:\+srv)?:\/\/[^/]+\/([^?]+)/i);
+        return match && match[1] ? decodeURIComponent(match[1]) : null;
+      } catch (_) {
+        return null;
+      }
+    })();
+    const dbName = process.env.MONGODB_DB_NAME || uriPathDb || 'shopmart';
+    const db = client.db(dbName);
     
     // Clear existing data
     console.log('🗑️  Clearing existing data...');
