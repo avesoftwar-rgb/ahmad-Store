@@ -51,6 +51,18 @@ export default function AdminDashboard() {
     }
   }
 
+  // Helpers to safely read nested metrics and avoid rendering objects
+  const getAvgLatency = () => metrics?.performanceMetrics?.api?.avgResponseTime ?? 0
+  const getRequestsPerMinute = () => metrics?.performanceMetrics?.api?.requestsPerMinute ?? 0
+  const getActiveSSE = () => metrics?.performanceMetrics?.sse?.activeConnections ?? 0
+  const getFunctionCallsCount = () => {
+    const fc = metrics?.assistantStats?.functionCalls
+    if (!fc) return 0
+    if (Array.isArray(fc)) return fc.length
+    if (typeof fc === 'object') return Object.values(fc).reduce((sum: number, v: any) => sum + (typeof v === 'number' ? v : 0), 0)
+    return Number(fc) || 0
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -195,15 +207,15 @@ export default function AdminDashboard() {
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-gray-600">Average Latency</span>
-              <span className="font-semibold">{metrics?.performanceMetrics?.averageLatency || 0}ms</span>
+              <span className="font-semibold">{getAvgLatency()}ms</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Total Requests</span>
-              <span className="font-semibold">{metrics?.performanceMetrics?.totalRequests || 0}</span>
+              <span className="text-gray-600">Requests / Min</span>
+              <span className="font-semibold">{getRequestsPerMinute()}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Active SSE Connections</span>
-              <span className="font-semibold">{metrics?.performanceMetrics?.activeSSEConnections || 0}</span>
+              <span className="font-semibold">{getActiveSSE()}</span>
             </div>
           </div>
         </div>
@@ -222,7 +234,7 @@ export default function AdminDashboard() {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Function Calls</span>
-              <span className="font-semibold">{metrics?.assistantStats?.functionCalls || 0}</span>
+              <span className="font-semibold">{getFunctionCallsCount()}</span>
             </div>
           </div>
         </div>
