@@ -291,8 +291,12 @@ export default function ProductAdmin() {
                 <input
                   type="number"
                   step="0.01"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                  value={Number.isFinite(formData.price) ? formData.price : 0}
+                  onChange={(e) => {
+                    const raw = e.target.value
+                    const num = raw === '' ? 0 : parseFloat(raw)
+                    setFormData({ ...formData, price: Number.isFinite(num) ? num : 0 })
+                  }}
                   className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
                   required
                 />
@@ -320,8 +324,12 @@ export default function ProductAdmin() {
                 </label>
                 <input
                   type="number"
-                  value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
+                  value={Number.isFinite(formData.stock) ? formData.stock : 0}
+                  onChange={(e) => {
+                    const raw = e.target.value
+                    const num = raw === '' ? 0 : parseInt(raw, 10)
+                    setFormData({ ...formData, stock: Number.isFinite(num) ? num : 0 })
+                  }}
                   className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
                   required
                 />
