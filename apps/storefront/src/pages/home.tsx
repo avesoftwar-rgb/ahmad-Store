@@ -47,7 +47,7 @@ export default function HomePage() {
         <div className="relative px-8 py-16 lg:py-24">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-4xl lg:text-6xl font-bold mb-6 animate-fade-in">
-              Welcome to ShopSmart
+              Welcome to ahmad store
             </h1>
             <p className="text-xl lg:text-2xl mb-8 opacity-90">
               Discover amazing products at unbeatable prices
