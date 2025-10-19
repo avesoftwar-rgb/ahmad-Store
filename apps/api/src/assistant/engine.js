@@ -391,7 +391,7 @@ router.post('/chat', async (req, res) => {
     
     // Update assistant stats
     try {
-      await fetch(`http://localhost:${process.env.PORT || 3001}/api/dashboard/assistant-stats`, {
+      await fetch(`http://127.0.0.1:${process.env.PORT || 3001}/api/dashboard/assistant-stats`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
