@@ -52,9 +52,27 @@ export default function ProductAdmin() {
 
   const loadStats = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/dashboard/business-metrics`)
+      // Use analytics dashboard-metrics and remap to local shape
+      const response = await fetch(`${API_BASE_URL}/api/analytics/dashboard-metrics`)
+      if (!response.ok) throw new Error('Failed to fetch metrics')
       const data = await response.json()
-      setStats(data)
+      const mapped = {
+        products: {
+          total: data?.products?.total ?? 0,
+          lowStock: 0,
+          byCategory: data?.orderStatusBreakdown ? {} : {}
+        },
+        customers: {
+          total: data?.customers ?? 0,
+          newThisWeek: data?.orders?.thisWeek ?? 0
+        },
+        orders: {
+          total: data?.revenue?.totalOrders ?? 0,
+          byStatus: data?.orderStatusBreakdown ?? {},
+          revenue: data?.revenue?.total ?? 0
+        }
+      }
+      setStats(mapped)
     } catch (error) {
       console.error('Failed to load stats:', error)
     }
@@ -193,7 +211,7 @@ export default function ProductAdmin() {
               </div>
               <div className="pt-2 border-t">
                 <div className="text-sm text-gray-500">By Category:</div>
-                {Object.entries(stats.products.byCategory).map(([cat, count]) => (
+                {stats.products.byCategory && Object.entries(stats.products.byCategory).map(([cat, count]) => (
                   <div key={cat} className="flex justify-between text-sm">
                     <span className="capitalize">{cat}:</span>
                     <span>{count as number}</span>
@@ -228,11 +246,11 @@ export default function ProductAdmin() {
                 <span className="text-gray-600">Revenue:</span>
                 <span className="font-bold text-green-600">{formatCurrency(stats.orders.revenue)}</span>
               </div>
-              {Object.entries(stats.orders.byStatus || {}).length > 0 && (
+              {stats.orders && Object.entries(stats.orders.byStatus || {}).length > 0 && (
                 <div className="pt-2 border-t">
                   <div className="text-sm text-gray-500">By Status:</div>
                   {Object.entries(stats.orders.byStatus).map(([status, count]) => (
-                    <div key={status} className="flex justify-between text-sm">
+                    <div key={`${status}`} className="flex justify-between text-sm">
                       <span>{status}:</span>
                       <span>{count as number}</span>
                     </div>
@@ -364,7 +382,7 @@ export default function ProductAdmin() {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {products.map((product) => (
-              <tr key={product._id}>
+              <tr key={product._id || product.name}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div>
                     <div className="text-sm font-medium text-gray-900">{product.name}</div>
