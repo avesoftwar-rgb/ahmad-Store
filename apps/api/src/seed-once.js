@@ -1,4 +1,5 @@
 const seedDatabase = require('../scripts/seed');
+const seedCategories = require('../scripts/seed-categories');
 const { getDB } = require('./db');
 
 /**
@@ -14,17 +15,19 @@ async function autoSeedIfEmpty() {
     }
 
     const db = getDB();
-    const [customers, products, orders] = await Promise.all([
+    const [customers, products, orders, categories] = await Promise.all([
       db.collection('customers').estimatedDocumentCount(),
       db.collection('products').estimatedDocumentCount(),
-      db.collection('orders').estimatedDocumentCount()
+      db.collection('orders').estimatedDocumentCount(),
+      db.collection('categories').estimatedDocumentCount().catch(() => 0)
     ]);
 
     // Seed when database is empty OR below assignment thresholds
     const needsSeed = (
       customers < 10 ||
       products < 30 ||
-      orders < 15
+      orders < 15 ||
+      categories < 5
     );
 
     if (!needsSeed) {
@@ -32,8 +35,14 @@ async function autoSeedIfEmpty() {
       return;
     }
 
-    console.log(`🌱 Auto-seed starting (counts => customers:${customers}, products:${products}, orders:${orders})...`);
+    console.log(`🌱 Auto-seed starting (counts => customers:${customers}, products:${products}, orders:${orders}, categories:${categories})...`);
+    
+    // Seed categories first, then main data
+    if (categories < 5) {
+      await seedCategories();
+    }
     await seedDatabase();
+    
     console.log('✅ Auto-seed completed');
   } catch (error) {
     console.error('Auto-seed error:', error);

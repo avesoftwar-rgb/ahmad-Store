@@ -14,6 +14,7 @@ dotenv.config();
 // Import routes
 const customersRouter = require('./routes/customers');
 const productsRouter = require('./routes/products');
+const categoriesRouter = require('./routes/categories');
 const ordersRouter = require('./routes/orders');
 const analyticsRouter = require('./routes/analytics');
 const dashboardRouter = require('./routes/dashboard');
@@ -128,6 +129,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/customers', customersRouter);
 app.use('/api/products', productsRouter);
+app.use('/api/categories', categoriesRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/dashboard', dashboardRouter);
