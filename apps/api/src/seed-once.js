@@ -20,12 +20,19 @@ async function autoSeedIfEmpty() {
       db.collection('orders').estimatedDocumentCount()
     ]);
 
-    if (customers > 0 || products > 0 || orders > 0) {
-      console.log('ℹ️  Auto-seed skipped: database already has data');
+    // Seed when database is empty OR below assignment thresholds
+    const needsSeed = (
+      customers < 10 ||
+      products < 30 ||
+      orders < 15
+    );
+
+    if (!needsSeed) {
+      console.log('ℹ️  Auto-seed skipped: data thresholds satisfied');
       return;
     }
 
-    console.log('🌱 Auto-seed starting (database is empty)...');
+    console.log(`🌱 Auto-seed starting (counts => customers:${customers}, products:${products}, orders:${orders})...`);
     await seedDatabase();
     console.log('✅ Auto-seed completed');
   } catch (error) {
