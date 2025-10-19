@@ -286,7 +286,21 @@ router.post('/seed', async (req, res) => {
       proc.on('error', reject);
     });
     
-    res.json({ message: 'Database seeded successfully' });
+    // Return fresh counts so the frontend can verify
+    try {
+      const db = getDB();
+      const [productsCount, customersCount, ordersCount] = await Promise.all([
+        db.collection('products').estimatedDocumentCount(),
+        db.collection('customers').estimatedDocumentCount(),
+        db.collection('orders').estimatedDocumentCount()
+      ]);
+      res.json({ 
+        message: 'Database seeded successfully',
+        counts: { products: productsCount, customers: customersCount, orders: ordersCount }
+      });
+    } catch (e) {
+      res.json({ message: 'Database seeded successfully' });
+    }
   } catch (error) {
     console.error('Manual seed error:', error);
     res.status(500).json({ error: 'Failed to seed database' });
