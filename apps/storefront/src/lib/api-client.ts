@@ -192,7 +192,7 @@ export function createOrderSSE(orderId: string) {
       eventSource.addEventListener('message', (event) => {
         try {
           const data = JSON.parse(event.data)
-          if (data.type === 'status') {
+          if (data.type === 'status' || data.type === 'status_update') {
             callback(data)
           }
         } catch (error) {
@@ -205,7 +205,7 @@ export function createOrderSSE(orderId: string) {
       eventSource.addEventListener('message', (event) => {
         try {
           const data = JSON.parse(event.data)
-          if (data.type === 'complete') {
+          if (data.type === 'complete' || data.type === 'completed') {
             callback(data)
             eventSource.close()
           }
