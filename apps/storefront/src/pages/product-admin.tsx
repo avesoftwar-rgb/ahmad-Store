@@ -135,20 +135,22 @@ export default function ProductAdmin() {
   }
 
   const handleResetData = async () => {
-    if (confirm('⚠️ This will reset ALL data to defaults. Are you sure?')) {
+    if (confirm('⚠️ سيؤدي هذا إلى مسح البيانات وإعادة تعبئتها بـ 30+ منتج تجريبي. هل أنت متأكد؟')) {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/admin/reset`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ confirm: 'RESET_ALL_DATA' })
+        const response = await fetch(`${API_BASE_URL}/api/products/seed`, {
+          method: 'POST'
         })
         if (response.ok) {
-          loadProducts()
-          loadStats()
-          alert('✅ Data reset to defaults')
+          await loadProducts()
+          await loadStats()
+          alert('✅ تمت إعادة التهيئة: تم إدراج 30+ منتج مع صور، وطلبات/عملاء افتراضيين')
+        } else {
+          const text = await response.text().catch(() => '')
+          alert('فشل التهيئة: ' + text)
         }
       } catch (error) {
         console.error('Failed to reset data:', error)
+        alert('فشل التهيئة. تحقق من السجل.')
       }
     }
   }
