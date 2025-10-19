@@ -4,7 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || window.location.origin
 
 export async function listProducts(): Promise<Product[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/products`)
+    const response = await fetch(`${API_BASE_URL}/api/products?limit=100`)
     if (!response.ok) throw new Error('Failed to fetch products')
     const data = await response.json()
     const products = data.products || data
