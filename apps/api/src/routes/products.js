@@ -1,8 +1,7 @@
 const express = require('express');
 const { ObjectId } = require('mongodb');
 const { getDB } = require('../db');
-const { spawn } = require('child_process');
-const path = require('path');
+const seedDatabase = require('../../scripts/seed');
 
 const router = express.Router();
 
@@ -268,23 +267,8 @@ router.put('/:id/stock', async (req, res) => {
 router.post('/seed', async (req, res) => {
   try {
     console.log('🌱 Manual seed requested...');
-    
-    await new Promise((resolve, reject) => {
-      const seedPath = path.join(__dirname, '../../scripts/seed.js');
-      const proc = spawn(process.execPath, [seedPath], {
-        stdio: 'inherit',
-        env: process.env
-      });
-      proc.on('close', (code) => {
-        if (code === 0) {
-          console.log('✅ Manual seed completed');
-          resolve();
-        } else {
-          reject(new Error(`Manual seed failed with exit code ${code}`));
-        }
-      });
-      proc.on('error', reject);
-    });
+    await seedDatabase();
+    console.log('✅ Manual seed completed');
     
     // Return fresh counts so the frontend can verify
     try {
