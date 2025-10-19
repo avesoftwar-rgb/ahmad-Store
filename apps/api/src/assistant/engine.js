@@ -54,7 +54,7 @@ function getDefaultConfig() {
     identity: {
       name: 'Alex',
       role: 'Customer Support Specialist',
-      company: 'ShopSmart',
+      company: 'ahmad store',
       personality: ['helpful', 'professional', 'friendly', 'efficient']
     },
     intents: {
