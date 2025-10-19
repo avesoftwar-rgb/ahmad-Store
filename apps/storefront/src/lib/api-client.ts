@@ -1,6 +1,6 @@
 // API Client for Backend Communication
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const API_BASE_URL = import.meta.env.VITE_API_URL || window.location.origin
 
 class ApiClient {
   private baseUrl: string
