@@ -165,13 +165,19 @@ router.post('/', async (req, res) => {
     
     const db = getDB();
     
+    const slug = (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const defaultImage = `https://picsum.photos/seed/${slug || Math.random().toString(36).slice(2)}/600/600`;
+    const normalizedTags = Array.isArray(tags)
+      ? tags
+      : (typeof tags === 'string' && tags.trim() !== '' ? tags.split(',').map(t => t.trim()) : []);
+
     const newProduct = {
       name,
       description: description || '',
       price: priceNum,
       category,
-      tags: Array.isArray(tags) ? tags : (typeof tags === 'string' && tags.trim() !== '' ? tags.split(',').map(t => t.trim()) : []),
-      imageUrl: imageUrl || '',
+      tags: normalizedTags.length ? normalizedTags : (category ? [category] : []),
+      imageUrl: imageUrl && imageUrl.trim() !== '' ? imageUrl : defaultImage,
       stock: stockNum || 0,
       createdAt: new Date(),
       updatedAt: new Date()
