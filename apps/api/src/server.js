@@ -141,7 +141,7 @@ app.get('/api/orders/:id/stream', orderSSE.streamOrderStatus);
 // Root info endpoint to avoid 404 on '/'
 app.get('/', (req, res) => {
   res.json({
-    service: 'Shopmart API',
+    service: 'ahmad store API',
     version: '1.0.0',
     status: 'ok',
     uptime: process.uptime(),
@@ -189,7 +189,7 @@ app.get('*', (req, res, next) => {
   } else {
     // If no frontend built, return API info
     res.json({
-      service: 'Shopmart API',
+      service: 'ahmad store API',
       message: 'Frontend not built yet. Please wait for frontend build to complete.',
       api: {
         health: '/api/health',
