@@ -31,7 +31,7 @@ const UserLogin: React.FC<UserLoginProps> = ({ onLogin }) => {
 
   return (
     <div className="card" style={{ maxWidth: '400px', margin: '2rem auto' }}>
-      <h2>Welcome to ShopSmart</h2>
+      <h2>Welcome to ahmad store</h2>
       <p style={{ color: '#666', marginTop: '0.5rem' }}>
         Enter your email to access your account and orders
       </p>
