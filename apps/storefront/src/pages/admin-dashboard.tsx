@@ -103,25 +103,25 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           title="Total Revenue"
-          value={`$${metrics?.totalRevenue.toLocaleString() || '0'}`}
+          value={`$${(metrics?.totalRevenue ?? 0).toLocaleString()}`}
           icon="💰"
           color="bg-green-500"
         />
         <MetricCard
           title="Total Orders"
-          value={metrics?.totalOrders || '0'}
+          value={`${metrics?.totalOrders ?? 0}`}
           icon="📦"
           color="bg-blue-500"
         />
         <MetricCard
           title="Total Customers"
-          value={metrics?.totalCustomers || '0'}
+          value={`${metrics?.totalCustomers ?? 0}`}
           icon="👥"
           color="bg-purple-500"
         />
         <MetricCard
           title="Avg Order Value"
-          value={`$${metrics?.averageOrderValue.toFixed(2) || '0'}`}
+          value={`$${(metrics?.averageOrderValue ?? 0).toFixed(2)}`}
           icon="📊"
           color="bg-orange-500"
         />
@@ -251,12 +251,13 @@ export default function AdminDashboard() {
 
 // Metric Card Component
 function MetricCard({ title, value, icon, color }: any) {
+  const safeValue = typeof value === 'object' ? (value?.toString?.() || JSON.stringify(value)) : value
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-gray-600 text-sm font-medium">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{safeValue}</p>
         </div>
         <div className={`${color} rounded-full p-3 text-white text-2xl`}>
           {icon}
