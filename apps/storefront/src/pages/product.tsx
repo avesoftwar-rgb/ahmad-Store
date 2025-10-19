@@ -1,288 +1,170 @@
-const express = require('express');
-const { ObjectId } = require('mongodb');
-const { getDB } = require('../db');
-const { spawn } = require('child_process');
-const path = require('path');
+import React, { useState, useEffect } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { getProduct, listProducts } from '../lib/api'
+import { useCart } from '../lib/store'
+import { formatCurrency } from '../lib/format'
+import type { Product } from '../types'
+import ProductCard from '../components/molecules/ProductCard'
 
-const router = express.Router();
+function ProductPage() {
+  const { id } = useParams<{ id: string }>()
+  const [product, setProduct] = useState<Product | null>(null)
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  
+  const addToCart = useCart(state => state.add)
 
-// GET /api/products - List products with filters
-router.get('/', async (req, res) => {
-  try {
-    const {
-      search,
-      tag,
-      category,
-      sort = 'name',
-      page = 1,
-      limit = 10
-    } = req.query;
-    
-    const db = getDB();
-    const query = {};
-    
-    // Build search query
-    if (search) {
-      query.$text = { $search: search };
+  useEffect(() => {
+    if (id) {
+      loadProduct(id)
     }
-    
-    if (tag) {
-      query.tags = tag;
-    }
-    
-    if (category) {
-      query.category = category;
-    }
-    
-    // Sorting options
-    const sortOptions = {
-      name: { name: 1 },
-      price: { price: 1 },
-      'price-desc': { price: -1 },
-      newest: { createdAt: -1 }
-    };
-    
-    const sortBy = sortOptions[sort] || { name: 1 };
-    
-    // Pagination
-    const pageNum = parseInt(page) || 1;
-    const pageLimit = Math.min(parseInt(limit) || 10, 100); // Max 100 items
-    const skip = (pageNum - 1) * pageLimit;
-    
-    // Execute query
-    const [products, totalCount] = await Promise.all([
-      db.collection('products')
-        .find(query)
-        .sort(sortBy)
-        .skip(skip)
-        .limit(pageLimit)
-        .toArray(),
-      db.collection('products').countDocuments(query)
-    ]);
-    
-    res.json({
-      products,
-      pagination: {
-        page: pageNum,
-        limit: pageLimit,
-        total: totalCount,
-        totalPages: Math.ceil(totalCount / pageLimit)
+  }, [id])
+
+  const loadProduct = async (productId: string) => {
+    try {
+      setLoading(true)
+      const [productData, allProducts] = await Promise.all([
+        getProduct(productId),
+        listProducts()
+      ])
+      
+      if (productData) {
+        setProduct(productData)
+        
+        // Find related products by shared tags
+        const related = allProducts
+          .filter(p => p.id !== productId && p.tags.some(tag => productData.tags.includes(tag)))
+          .slice(0, 3)
+        setRelatedProducts(related)
       }
-    });
-  } catch (error) {
-    console.error('Products list error:', error);
-    res.status(500).json({
-      error: {
-        code: 'LIST_ERROR',
-        message: 'Failed to retrieve products'
-      }
-    });
+    } catch (error) {
+      console.error('Failed to load product:', error)
+    } finally {
+      setLoading(false)
+    }
   }
-});
 
-// GET /api/products/:id - Get single product
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).json({
-        error: {
-          code: 'INVALID_ID',
-          message: 'Invalid product ID format'
-        }
-      });
-    }
-    
-    const db = getDB();
-    const product = await db.collection('products').findOne({ 
-      _id: new ObjectId(id) 
-    });
-    
-    if (!product) {
-      return res.status(404).json({
-        error: {
-          code: 'PRODUCT_NOT_FOUND',
-          message: 'Product not found'
-        }
-      });
-    }
-    
-    res.json(product);
-  } catch (error) {
-    console.error('Product fetch error:', error);
-    res.status(500).json({
-      error: {
-        code: 'FETCH_ERROR',
-        message: 'Failed to fetch product'
-      }
-    });
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    )
   }
-});
 
-// POST /api/products - Create new product
-router.post('/', async (req, res) => {
-  try {
-    const {
-      name,
-      description,
-      price,
-      category,
-      tags,
-      imageUrl,
-      stock
-    } = req.body;
-    
-    // Validation
-    if (!name || !price || !category) {
-      return res.status(400).json({
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Name, price, and category are required'
-        }
-      });
-    }
-    
-    if (typeof price !== 'number' || price < 0) {
-      return res.status(400).json({
-        error: {
-          code: 'INVALID_PRICE',
-          message: 'Price must be a positive number'
-        }
-      });
-    }
-    
-    if (typeof stock !== 'number' || stock < 0) {
-      return res.status(400).json({
-        error: {
-          code: 'INVALID_STOCK',
-          message: 'Stock must be a non-negative number'
-        }
-      });
-    }
-    
-    const db = getDB();
-    
-    const newProduct = {
-      name,
-      description: description || '',
-      price,
-      category,
-      tags: tags || [],
-      imageUrl: imageUrl || '',
-      stock: stock || 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    const result = await db.collection('products').insertOne(newProduct);
-    
-    res.status(201).json({
-      ...newProduct,
-      _id: result.insertedId
-    });
-  } catch (error) {
-    console.error('Product creation error:', error);
-    res.status(500).json({
-      error: {
-        code: 'CREATE_ERROR',
-        message: 'Failed to create product'
-      }
-    });
+  if (!product) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-gray-400 text-6xl mb-4">❌</div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Product not found</h3>
+        <p className="text-gray-600 mb-4">The product you're looking for doesn't exist.</p>
+        <Link to="/" className="btn-primary">
+          Back to Catalog
+        </Link>
+      </div>
+    )
   }
-});
 
-// PUT /api/products/:id/stock - Update product stock
-router.put('/:id/stock', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { stock, operation = 'set' } = req.body;
-    
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).json({
-        error: {
-          code: 'INVALID_ID',
-          message: 'Invalid product ID format'
-        }
-      });
-    }
-    
-    if (typeof stock !== 'number') {
-      return res.status(400).json({
-        error: {
-          code: 'INVALID_STOCK',
-          message: 'Stock must be a number'
-        }
-      });
-    }
-    
-    const db = getDB();
-    let update;
-    
-    if (operation === 'increment') {
-      update = { $inc: { stock } };
-    } else if (operation === 'decrement') {
-      update = { $inc: { stock: -stock } };
-    } else {
-      update = { $set: { stock } };
-    }
-    
-    update.$set = { ...update.$set, updatedAt: new Date() };
-    
-    const result = await db.collection('products').findOneAndUpdate(
-      { _id: new ObjectId(id) },
-      update,
-      { returnDocument: 'after' }
-    );
-    
-    if (!result) {
-      return res.status(404).json({
-        error: {
-          code: 'PRODUCT_NOT_FOUND',
-          message: 'Product not found'
-        }
-      });
-    }
-    
-    res.json(result);
-  } catch (error) {
-    console.error('Stock update error:', error);
-    res.status(500).json({
-      error: {
-        code: 'UPDATE_ERROR',
-        message: 'Failed to update stock'
-      }
-    });
-  }
-});
+  const isOutOfStock = product.stockQty === 0
 
-// POST /api/products/seed - Seed products (admin only)
-router.post('/seed', async (req, res) => {
-  try {
-    console.log('🌱 Manual seed requested...');
-    
-    await new Promise((resolve, reject) => {
-      const seedPath = path.join(__dirname, '../../scripts/seed.js');
-      const proc = spawn(process.execPath, [seedPath], {
-        stdio: 'inherit',
-        env: process.env
-      });
-      proc.on('close', (code) => {
-        if (code === 0) {
-          console.log('✅ Manual seed completed');
-          resolve();
-        } else {
-          reject(new Error(`Manual seed failed with exit code ${code}`));
-        }
-      });
-      proc.on('error', reject);
-    });
-    
-    res.json({ message: 'Database seeded successfully' });
-  } catch (error) {
-    console.error('Manual seed error:', error);
-    res.status(500).json({ error: 'Failed to seed database' });
-  }
-});
+  return (
+    <div className="space-y-8">
+      {/* Breadcrumb */}
+      <nav className="text-sm">
+        <Link to="/" className="text-primary-600 hover:text-primary-700">
+          Catalog
+        </Link>
+        <span className="mx-2 text-gray-400">/</span>
+        <span className="text-gray-600">{product.title}</span>
+      </nav>
 
-module.exports = router;
+      {/* Product Details */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Product Image */}
+        <div className="space-y-4">
+          <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+            <img
+              src={product.image}
+              alt={product.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+
+        {/* Product Info */}
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.title}</h1>
+            <p className="text-3xl font-bold text-primary-600 mb-4">
+              {formatCurrency(product.price)}
+            </p>
+            
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="flex items-center space-x-2">
+                <div className={`w-3 h-3 rounded-full ${isOutOfStock ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                <span className={`font-medium ${isOutOfStock ? 'text-red-600' : 'text-green-600'}`}>
+                  {isOutOfStock ? 'Out of Stock' : `${product.stockQty} in Stock`}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {product.description && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
+              <p className="text-gray-600 leading-relaxed">{product.description}</p>
+            </div>
+          )}
+
+          {/* Tags */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Categories</h3>
+            <div className="flex flex-wrap gap-2">
+              {product.tags.map(tag => (
+                <span
+                  key={tag}
+                  className="px-3 py-1 bg-primary-100 text-primary-800 text-sm rounded-full"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Add to Cart */}
+          <div className="pt-4 border-t border-gray-200">
+            <button
+              onClick={() => addToCart(product)}
+              disabled={isOutOfStock}
+              className={`w-full py-3 px-6 text-lg font-medium rounded-lg transition-colors ${
+                isOutOfStock
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'btn-primary'
+              }`}
+            >
+              {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Related Products */}
+      {relatedProducts.length > 0 && (
+        <div className="border-t border-gray-200 pt-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Related Products</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {relatedProducts.map(relatedProduct => (
+              <ProductCard
+                key={relatedProduct.id}
+                product={relatedProduct}
+                onAddToCart={() => addToCart(relatedProduct)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default ProductPage
