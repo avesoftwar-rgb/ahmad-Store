@@ -50,10 +50,9 @@ export default function CheckoutPage() {
     try {
       const orderData = {
         customerId: customerInfo._id,
-        customerEmail: customerInfo.email,
         items: items.map(item => ({
-          id: item.id,
-          qty: item.qty
+          productId: item.id,
+          quantity: item.qty
         }))
       }
 
