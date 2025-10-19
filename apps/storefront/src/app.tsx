@@ -1,6 +1,7 @@
 import { Routes, Route, Link } from 'react-router-dom'
 import CatalogPage from './pages/catalog'
-import ProductPage from './pages/product'
+// Product page removed - products can be viewed in catalog
+// import ProductPage from './pages/product'
 // Auth not required for Week 5
 // import AuthPage from './pages/auth'
 // import { AuthProvider } from './lib/auth'
@@ -65,7 +66,7 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/catalog" element={<CatalogPage />} />
-            <Route path="/p/:id" element={<ProductPage />} />
+            {/* Product page removed - products can be viewed in catalog */}
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/order/:id" element={<OrderStatusPage />} />
