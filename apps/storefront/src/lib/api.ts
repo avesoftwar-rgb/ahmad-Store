@@ -15,7 +15,7 @@ export async function listProducts(): Promise<Product[]> {
       title: p.name || p.title,
       price: p.price,
       image: p.image || p.imageUrl || '/placeholder.jpg',
-      tags: p.tags || (p.category ? [p.category] : []),
+      tags: (Array.isArray(p.tags) && p.tags.length > 0) ? p.tags : (p.category ? [p.category] : []),
       stockQty: p.stock || p.stockQty || 0,
       description: p.description
     }))
@@ -39,7 +39,7 @@ export async function getProduct(id: string): Promise<Product | null> {
       title: p.name || p.title,
       price: p.price,
       image: p.image || p.imageUrl || '/placeholder.jpg',
-      tags: p.tags || (p.category ? [p.category] : []),
+      tags: (Array.isArray(p.tags) && p.tags.length > 0) ? p.tags : (p.category ? [p.category] : []),
       stockQty: p.stock || p.stockQty || 0,
       description: p.description
     }
