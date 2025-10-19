@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { formatCurrency } from '../../lib/format'
 import LazyImage from '../atoms/LazyImage'
 import type { Product } from '../../types'
@@ -13,23 +12,19 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
 
   return (
     <div className="card hover:shadow-md transition-shadow duration-200">
-      <Link to={`/p/${product.id}`} className="block">
-        <div className="aspect-square rounded-lg mb-4 overflow-hidden">
-          <LazyImage
-            src={product.image}
-            alt={product.title}
-            className="w-full h-full"
-          />
-        </div>
-      </Link>
+      <div className="aspect-square rounded-lg mb-4 overflow-hidden">
+        <LazyImage
+          src={product.image}
+          alt={product.title}
+          className="w-full h-full"
+        />
+      </div>
       
       <div className="space-y-3">
         <div>
-          <Link to={`/p/${product.id}`} className="block">
-            <h3 className="font-semibold text-gray-900 hover:text-primary-600 transition-colors line-clamp-2">
-              {product.title}
-            </h3>
-          </Link>
+          <h3 className="font-semibold text-gray-900 line-clamp-2">
+            {product.title}
+          </h3>
           <p className="text-lg font-bold text-primary-600 mt-1">
             {formatCurrency(product.price)}
           </p>
