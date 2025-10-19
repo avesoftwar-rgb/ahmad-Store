@@ -32,7 +32,7 @@ export class SSEClient {
       this.disconnect()
     }
 
-    const url = `${this.baseUrl}/orders/${orderId}/stream`
+    const url = `${this.baseUrl}/api/orders/${orderId}/stream`
     console.log(`Connecting to SSE stream: ${url}`)
 
     try {
