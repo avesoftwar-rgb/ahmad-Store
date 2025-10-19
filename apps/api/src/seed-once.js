@@ -1,5 +1,4 @@
-const path = require('path');
-const { spawn } = require('child_process');
+const seedDatabase = require('../scripts/seed');
 const { getDB } = require('./db');
 
 /**
@@ -27,23 +26,8 @@ async function autoSeedIfEmpty() {
     }
 
     console.log('🌱 Auto-seed starting (database is empty)...');
-
-    await new Promise((resolve, reject) => {
-      const seedPath = path.join(__dirname, '../scripts/seed.js');
-      const proc = spawn(process.execPath, [seedPath], {
-        stdio: 'inherit',
-        env: process.env
-      });
-      proc.on('close', (code) => {
-        if (code === 0) {
-          console.log('✅ Auto-seed completed');
-          resolve();
-        } else {
-          reject(new Error(`Auto-seed failed with exit code ${code}`));
-        }
-      });
-      proc.on('error', reject);
-    });
+    await seedDatabase();
+    console.log('✅ Auto-seed completed');
   } catch (error) {
     console.error('Auto-seed error:', error);
   }
