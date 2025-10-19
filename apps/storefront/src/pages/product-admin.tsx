@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { formatCurrency } from '../lib/format'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || window.location.origin
 
 interface Product {
   _id?: string
@@ -40,7 +40,7 @@ export default function ProductAdmin() {
 
   const loadProducts = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/products`)
+      const response = await fetch(`${API_BASE_URL}/api/products`)
       const data = await response.json()
       setProducts(data.products || data)
     } catch (error) {
@@ -52,7 +52,7 @@ export default function ProductAdmin() {
 
   const loadStats = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/dashboard/business-metrics`)
+      const response = await fetch(`${API_BASE_URL}/api/dashboard/business-metrics`)
       const data = await response.json()
       setStats(data)
     } catch (error) {
@@ -64,8 +64,8 @@ export default function ProductAdmin() {
     e.preventDefault()
     
     const url = editingProduct 
-      ? `${API_BASE_URL}/products/${editingProduct._id}`
-      : `${API_BASE_URL}/products`
+      ? `${API_BASE_URL}/api/products/${editingProduct._id}`
+      : `${API_BASE_URL}/api/products`
     
     const method = editingProduct ? 'PUT' : 'POST'
     
@@ -97,7 +97,7 @@ export default function ProductAdmin() {
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this product?')) {
       try {
-        const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/products/${id}`, {
           method: 'DELETE'
         })
         if (response.ok) {
@@ -119,7 +119,7 @@ export default function ProductAdmin() {
   const handleResetData = async () => {
     if (confirm('⚠️ This will reset ALL data to defaults. Are you sure?')) {
       try {
-        const response = await fetch(`${API_BASE_URL}/admin/reset`, {
+        const response = await fetch(`${API_BASE_URL}/api/admin/reset`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ confirm: 'RESET_ALL_DATA' })
