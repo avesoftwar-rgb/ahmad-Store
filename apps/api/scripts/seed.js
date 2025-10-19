@@ -568,5 +568,10 @@ async function seedDatabase() {
   }
 }
 
-// Run seed
-seedDatabase();
+// Export for reuse and allow direct execution
+module.exports = seedDatabase;
+
+if (require.main === module) {
+  // Run seed when executed directly from CLI
+  seedDatabase();
+}
