@@ -1,6 +1,6 @@
 import type { Product, OrderStatus } from '../types'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const API_BASE_URL = import.meta.env.VITE_API_URL || window.location.origin
 
 export async function listProducts(): Promise<Product[]> {
   try {
@@ -107,7 +107,7 @@ export const api = {
   // Get customer orders
   getCustomerOrders: async (customerId: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/orders?customerId=${customerId}`)
+      const response = await fetch(`${API_BASE_URL}/api/orders?customerId=${customerId}`)
       if (!response.ok) throw new Error('Failed to fetch orders')
       return await response.json()
     } catch (error) {
