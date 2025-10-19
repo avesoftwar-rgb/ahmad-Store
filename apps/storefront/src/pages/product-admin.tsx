@@ -203,15 +203,15 @@ export default function ProductAdmin() {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Total:</span>
-                <span className="font-bold">{stats.products.total}</span>
+                <span className="font-bold">{Number(stats?.products?.total ?? 0)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Low Stock:</span>
-                <span className="font-bold text-red-600">{stats.products.lowStock}</span>
+                <span className="font-bold text-red-600">{Number(stats?.products?.lowStock ?? 0)}</span>
               </div>
               <div className="pt-2 border-t">
                 <div className="text-sm text-gray-500">By Category:</div>
-                {stats.products.byCategory && Object.entries(stats.products.byCategory).map(([cat, count]) => (
+                {stats?.products?.byCategory && Object.entries(stats.products.byCategory).map(([cat, count]) => (
                   <div key={cat} className="flex justify-between text-sm">
                     <span className="capitalize">{cat}:</span>
                     <span>{count as number}</span>
@@ -226,11 +226,11 @@ export default function ProductAdmin() {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Total:</span>
-                <span className="font-bold">{stats.customers.total}</span>
+                <span className="font-bold">{Number(stats?.customers?.total ?? 0)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">New This Week:</span>
-                <span className="font-bold text-green-600">{stats.customers.newThisWeek}</span>
+                <span className="font-bold text-green-600">{Number(stats?.customers?.newThisWeek ?? 0)}</span>
               </div>
             </div>
           </div>
@@ -240,7 +240,7 @@ export default function ProductAdmin() {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Total:</span>
-                <span className="font-bold">{stats.orders.total}</span>
+                <span className="font-bold">{Number(stats?.orders?.total ?? 0)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Revenue:</span>
