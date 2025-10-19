@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const fs = require('fs');
+const { spawn } = require('child_process');
 const { connectDB } = require('./db');
 const { autoSeedIfEmpty } = require('./seed-once');
 const { globalErrorHandler, notFoundHandler } = require('./middleware/error-handler');
@@ -21,6 +23,71 @@ const { assistantRouter } = require('./assistant/engine');
 const app = express();
 const PORT = process.env.PORT || 3001;
 const PUBLIC_DIR = path.join(__dirname, '../public');
+
+// Function to build frontend if needed
+async function buildFrontendIfNeeded() {
+  const indexPath = path.join(PUBLIC_DIR, 'index.html');
+  
+  // Check if frontend is already built
+  if (fs.existsSync(indexPath)) {
+    console.log('✅ Frontend already built');
+    return;
+  }
+
+  console.log('🔨 Building frontend...');
+  
+  try {
+    // Build frontend
+    await new Promise((resolve, reject) => {
+      const storefrontDir = path.join(__dirname, '../../storefront');
+      const buildProcess = spawn('npm', ['run', 'build'], {
+        cwd: storefrontDir,
+        stdio: 'inherit',
+        shell: true
+      });
+      
+      buildProcess.on('close', (code) => {
+        if (code === 0) {
+          console.log('✅ Frontend build completed');
+          resolve();
+        } else {
+          reject(new Error(`Frontend build failed with exit code ${code}`));
+        }
+      });
+      
+      buildProcess.on('error', reject);
+    });
+
+    // Copy built files to public directory
+    const distDir = path.join(__dirname, '../../storefront/dist');
+    if (fs.existsSync(distDir)) {
+      // Create public directory if it doesn't exist
+      if (!fs.existsSync(PUBLIC_DIR)) {
+        fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+      }
+      
+      // Copy files
+      const files = fs.readdirSync(distDir);
+      for (const file of files) {
+        const srcPath = path.join(distDir, file);
+        const destPath = path.join(PUBLIC_DIR, file);
+        
+        if (fs.statSync(srcPath).isDirectory()) {
+          // Copy directory recursively
+          fs.cpSync(srcPath, destPath, { recursive: true });
+        } else {
+          // Copy file
+          fs.copyFileSync(srcPath, destPath);
+        }
+      }
+      
+      console.log('✅ Frontend files copied to public directory');
+    }
+  } catch (error) {
+    console.error('❌ Frontend build failed:', error);
+    // Don't exit, just serve API without frontend
+  }
+}
 
 // Middleware
 app.use(cors({
@@ -113,7 +180,23 @@ app.get('/api/performance', (req, res) => {
 // SPA fallback: send index.html for non-API routes
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) return next();
-  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+  
+  const indexPath = path.join(PUBLIC_DIR, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    // If no frontend built, return API info
+    res.json({
+      service: 'Shopmart API',
+      message: 'Frontend not built yet. Please wait for frontend build to complete.',
+      api: {
+        health: '/api/health',
+        products: '/api/products',
+        customers: '/api/customers',
+        orders: '/api/orders'
+      }
+    });
+  }
 });
 
 app.use(notFoundHandler);
@@ -126,6 +209,10 @@ async function startServer() {
   try {
     await connectDB();
     console.log('✅ Connected to MongoDB');
+    
+    // Build frontend if needed
+    await buildFrontendIfNeeded();
+    
     // Auto-seed once if database is empty (controlled by env)
     await autoSeedIfEmpty();
     
