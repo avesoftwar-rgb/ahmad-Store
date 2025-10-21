@@ -1,7 +1,7 @@
 services:
-  # Unified Backend + Frontend Service
+  # Backend API Service
   - type: web
-    name: shopmart-unified
+    name: shopmart-api
     env: node
     region: frankfurt
     plan: free
@@ -20,3 +20,21 @@ services:
         sync: false
       - key: AUTO_SEED
         value: "true"
+      - key: AI_ASSISTANT_URL
+        sync: false
+
+  # AI Assistant Service
+  - type: web
+    name: shopmart-ai-assistant
+    env: python
+    region: frankfurt
+    plan: free
+    rootDir: apps/ai-assistant
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: PYTHON_VERSION
+        value: "3.11"
