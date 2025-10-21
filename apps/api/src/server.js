@@ -91,10 +91,42 @@ async function buildFrontendIfNeeded() {
 }
 
 // Middleware
-app.use(cors({
-  origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:5173'],
-  credentials: true
-}));
+// Robust CORS: supports comma-separated origins with spaces and simple wildcard like https://*.vercel.app
+const rawOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+const defaultOrigins = ['http://localhost:5173'];
+const allowlist = rawOrigins.length ? rawOrigins : defaultOrigins;
+
+function isOriginAllowed(origin, list) {
+  if (!origin) return true; // allow non-browser tools
+  return list.some(entry => {
+    if (entry === '*') return true;
+    // wildcard subdomains: https://*.vercel.app
+    const wildcardHttps = entry.startsWith('https://*.');
+    const wildcardHttp = entry.startsWith('http://*.');
+    if (wildcardHttps || wildcardHttp) {
+      const base = entry.replace('https://*.', '').replace('http://*.', '');
+      return origin.endsWith('.' + base) || origin.endsWith('://' + base);
+    }
+    return origin === entry;
+  });
+}
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    const allowed = isOriginAllowed(origin, allowlist);
+    if (allowed) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization','Accept']
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
