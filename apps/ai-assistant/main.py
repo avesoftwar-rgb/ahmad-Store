@@ -3,6 +3,7 @@ from typing import List, Dict, Any, Optional, Tuple, Set
 import numpy as np
 import faiss
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 
@@ -173,6 +174,13 @@ def enrich_db(question: str) -> List[str]:
 
 # ===================== FastAPI =====================
 app = FastAPI(title="Store LLM API", version="1.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # safe for backend-to-backend or testing; tighten if exposing to browsers
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class ChatReq(BaseModel):
     question: str
@@ -188,6 +196,14 @@ class GenReq(BaseModel):
 @app.get("/health")
 def health():
     return {"service": SERVICE_NAME, "status": "healthy", "model": REMOTE_MODEL, "kb": len(KB)}
+
+@app.get("/")
+def root():
+    return {
+        "service": SERVICE_NAME,
+        "status": "ok",
+        "endpoints": ["/health", "/generate", "/chat", "/docs"],
+    }
 
 @app.post("/generate")
 def generate(req: GenReq):
