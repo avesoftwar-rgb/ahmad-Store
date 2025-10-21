@@ -5,6 +5,7 @@ const path = require('path');
 const { classifyIntent, INTENTS } = require('./intent-classifier');
 const functionRegistry = require('./function-registry');
 const citationValidator = require('./citation-validator');
+const synonyms = require('./synonyms');
 
 const router = express.Router();
 
@@ -178,6 +179,29 @@ function validateCitations(citations) {
   };
 }
 
+// Expand user query using simple bilingual synonyms
+function expandQuery(userInput) {
+  const text = String(userInput || '');
+  const isArabic = /[\u0600-\u06FF]/.test(text);
+  const dict = isArabic ? synonyms.ar : synonyms.en;
+  const additions = new Set();
+  for (const key of Object.keys(dict)) {
+    for (const w of dict[key]) {
+      if (text.toLowerCase().includes(w.toLowerCase())) {
+        dict[key].forEach(v => additions.add(v));
+        break;
+      }
+    }
+  }
+  // light cross-lingual hints
+  if (isArabic) {
+    ["return policy","shipping options","order status"].forEach(v=>additions.add(v));
+  } else {
+    ["سياسة الإرجاع","خيارات الشحن","حالة الطلب"].forEach(v=>additions.add(v));
+  }
+  return [text, ...Array.from(additions)].slice(0, 12);
+}
+
 // Simple language detection (Arabic vs English)
 function detectLanguage(text) {
   try {
@@ -303,8 +327,13 @@ async function generateResponse(userInput, intent, functionResults = []) {
   
   switch (intent.intent) {
     case INTENTS.POLICY_QUESTION:
-      // Use KB + LLM for grounded answer with citations
-      const policyResponse = await handlePolicyQuestion(userInput);
+      // Expand query to improve KB recall before LLM
+      const variants = expandQuery(userInput);
+      let policyResponse = '';
+      for (const v of variants) {
+        policyResponse = await handlePolicyQuestion(v);
+        if (policyResponse && !/could not find/i.test(policyResponse)) break;
+      }
       response.text = policyResponse;
       
       // Validate citations
@@ -548,6 +577,32 @@ router.post('/chat', async (req, res) => {
         message: 'Failed to process your request'
       }
     });
+  }
+});
+
+// Lightweight search endpoint to power UI autosuggest
+router.get('/search/policies', (req, res) => {
+  try {
+    const q = String(req.query.q || '').toLowerCase();
+    if (!knowledgeBase || knowledgeBase.length === 0) return res.json([]);
+    const results = knowledgeBase
+      .map((p, i) => ({ i, score: (p.question + ' ' + p.answer).toLowerCase().includes(q) ? 1 : 0, p }))
+      .filter(r => r.score > 0)
+      .slice(0, 10)
+      .map(r => ({ id: r.p.id, question: r.p.question, category: r.p.category }));
+    res.json(results);
+  } catch (e) {
+    res.status(500).json({ error: 'SEARCH_FAILED' });
+  }
+});
+
+// Hot reload KB without server restart
+router.post('/kb/reload', (req, res) => {
+  try {
+    loadKnowledgeBase();
+    res.json({ ok: true, size: knowledgeBase.length });
+  } catch (e) {
+    res.status(500).json({ error: 'KB_RELOAD_FAILED' });
   }
 });
 
