@@ -1,7 +1,7 @@
 services:
-  # Backend API Service
+  # Unified Backend + Frontend Service
   - type: web
-    name: shopmart-api
+    name: shopmart-unified
     env: node
     region: frankfurt
     plan: free
@@ -20,23 +20,23 @@ services:
         sync: false
       - key: AUTO_SEED
         value: "true"
-      - key: AI_ASSISTANT_URL
-        sync: false
 
-  # AI Assistant Service
+  # LLM Service (Python FastAPI)
   - type: web
-    name: shopmart-ai-assistant
+    name: llm-service
     env: python
     region: frankfurt
     plan: free
-    rootDir: apps/ai-assistant
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: python main_simple.py
+    rootDir: apps/llm-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
-      - key: PORT
-        value: "8000"
       - key: PYTHON_VERSION
         value: "3.11.0"
-      - key: PYTORCH_CUDA_ALLOC_CONF
-        value: "max_split_size_mb:128"
+      - key: HF_TOKEN
+        sync: false
+      - key: REMOTE_MODEL
+        value: "mistralai/Mistral-7B-Instruct-v0.3"
+      - key: BACKEND_URL
+        sync: false
