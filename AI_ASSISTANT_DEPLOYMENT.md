@@ -39,7 +39,7 @@ Hugging Face Models (microsoft/phi-2)
 3. **Environment Variables**:
    ```
    PORT=8000
-   PYTHON_VERSION=3.11
+   PYTHON_VERSION=3.11.0
    ```
 
 4. **Deploy**: Click "Create Web Service" and wait for deployment
