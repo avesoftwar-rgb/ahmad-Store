@@ -27,6 +27,11 @@ const PUBLIC_DIR = path.join(__dirname, '../public');
 
 // Function to build frontend if needed
 async function buildFrontendIfNeeded() {
+  // Skip by default when frontend is deployed separately (e.g., on Vercel)
+  if (process.env.BUILD_FRONTEND !== 'true') {
+    console.log('ℹ️ Skipping frontend build (BUILD_FRONTEND != "true").');
+    return;
+  }
   const indexPath = path.join(PUBLIC_DIR, 'index.html');
   
   // Check if frontend is already built
