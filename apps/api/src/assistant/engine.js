@@ -5,6 +5,7 @@ const path = require('path');
 const { classifyIntent, INTENTS } = require('./intent-classifier');
 const functionRegistry = require('./function-registry');
 const citationValidator = require('./citation-validator');
+const aiAssistantService = require('../services/ai-assistant-service');
 
 const router = express.Router();
 
@@ -238,6 +239,28 @@ async function generateResponse(userInput, intent, functionResults = []) {
     citationValidation: null
   };
   
+  // Try AI assistant service first for enhanced responses
+  try {
+    const aiResponse = await aiAssistantService.generateEnhancedResponse(userInput, intent.intent, { functionResults });
+    
+    if (aiResponse && aiResponse.text) {
+      response.text = aiResponse.text;
+      response.citations = aiResponse.sources || [];
+      response.confidence = aiResponse.confidence || intent.confidence;
+      response.method = aiResponse.method || 'ai';
+      
+      // Add function results if available
+      if (functionResults.length > 0) {
+        response.functionsExecuted = functionResults.map(r => r.functionName || 'unknown');
+      }
+      
+      return response;
+    }
+  } catch (error) {
+    console.log('AI service unavailable, using fallback responses');
+  }
+  
+  // Fallback to original logic if AI service fails
   switch (intent.intent) {
     case INTENTS.POLICY_QUESTION:
       // Use knowledge base for policy questions
@@ -442,6 +465,22 @@ router.get('/info', (req, res) => {
     })),
     knowledgeBaseSize: knowledgeBase.length
   });
+});
+
+// AI Assistant health check
+router.get('/ai-health', async (req, res) => {
+  try {
+    const health = await aiAssistantService.checkHealth();
+    res.json({
+      aiAssistant: health,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      aiAssistant: { available: false, error: error.message },
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Initialize on module load
