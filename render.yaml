@@ -30,11 +30,13 @@ services:
     region: frankfurt
     plan: free
     rootDir: apps/ai-assistant
-    buildCommand: pip install -r requirements.txt
-    startCommand: python main.py
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: python main_simple.py
     healthCheckPath: /health
     envVars:
       - key: PORT
         value: "8000"
       - key: PYTHON_VERSION
         value: "3.11"
+      - key: PYTORCH_CUDA_ALLOC_CONF
+        value: "max_split_size_mb:128"
